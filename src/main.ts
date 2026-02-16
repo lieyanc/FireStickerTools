@@ -1,5 +1,5 @@
 import './style.css';
-import type { LoadedImage, GridConfig } from './types.ts';
+import type { LoadedImage, GridConfig, DragMode } from './types.ts';
 import { loadImage } from './core/image-loader.ts';
 import { GridModel } from './core/grid-model.ts';
 import { initUploadZone } from './ui/upload-zone.ts';
@@ -71,6 +71,8 @@ initUploadZone(handleFile);
 const presetContainer = document.getElementById('preset-controls')!;
 initPresetControls(presetContainer, (config) => {
   applyGrid(config);
+}, (mode: DragMode) => {
+  gridOverlay.setDragMode(mode);
 });
 
 // Initialize toolbar

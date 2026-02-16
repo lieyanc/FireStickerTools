@@ -45,4 +45,7 @@ export interface DisplayTransform {
 export type DragTarget = {
   type: 'row' | 'col';
   index: number;
+  isEdge: boolean;
 } | null;
+
+export type DragMode = 'redistribute' | 'independent';

@@ -48,17 +48,37 @@ export class GridModel {
     this._initEqualGrid();
   }
 
-  moveBoundary(type: 'row' | 'col', index: number, position: number): void {
+  moveBoundary(type: 'row' | 'col', index: number, position: number, redistribute = false): void {
     const boundaries = type === 'row' ? this._rowBoundaries : this._colBoundaries;
-
-    // Can't move first or last boundary
-    if (index <= 0 || index >= boundaries.length - 1) return;
-
     const minGap = 4; // minimum pixel gap
-    const minPos = boundaries[index - 1] + minGap;
-    const maxPos = boundaries[index + 1] - minGap;
+    const last = boundaries.length - 1;
 
-    boundaries[index] = Math.round(Math.max(minPos, Math.min(maxPos, position)));
+    if (index === 0) {
+      // First edge: clamp to [0, boundaries[1] - minGap]
+      boundaries[0] = Math.round(Math.max(0, Math.min(boundaries[1] - minGap, position)));
+      if (redistribute) this.redistributeInner(type);
+    } else if (index === last) {
+      // Last edge: clamp to [boundaries[last-1] + minGap, max]
+      const max = type === 'row' ? this._imageHeight : this._imageWidth;
+      boundaries[last] = Math.round(Math.max(boundaries[last - 1] + minGap, Math.min(max, position)));
+      if (redistribute) this.redistributeInner(type);
+    } else {
+      // Inner line: clamp between adjacent boundaries
+      const minPos = boundaries[index - 1] + minGap;
+      const maxPos = boundaries[index + 1] - minGap;
+      boundaries[index] = Math.round(Math.max(minPos, Math.min(maxPos, position)));
+    }
+  }
+
+  redistributeInner(type: 'row' | 'col'): void {
+    const boundaries = type === 'row' ? this._rowBoundaries : this._colBoundaries;
+    const first = boundaries[0];
+    const last = boundaries[boundaries.length - 1];
+    const count = boundaries.length - 1; // number of segments
+
+    for (let i = 1; i < boundaries.length - 1; i++) {
+      boundaries[i] = Math.round(first + (i / count) * (last - first));
+    }
   }
 
   getCells(): CellRect[] {
@@ -79,17 +99,19 @@ export class GridModel {
    * Find which boundary line (if any) is near the given image-space coordinates.
    * Returns null if nothing is within hitRadius pixels.
    */
-  hitTest(imageX: number, imageY: number, hitRadius: number): { type: 'row' | 'col'; index: number } | null {
+  hitTest(imageX: number, imageY: number, hitRadius: number): { type: 'row' | 'col'; index: number; isEdge: boolean } | null {
     // Check column boundaries (vertical lines) — test x
-    for (let i = 1; i < this._colBoundaries.length - 1; i++) {
+    for (let i = 0; i < this._colBoundaries.length; i++) {
       if (Math.abs(imageX - this._colBoundaries[i]) <= hitRadius) {
-        return { type: 'col', index: i };
+        const isEdge = i === 0 || i === this._colBoundaries.length - 1;
+        return { type: 'col', index: i, isEdge };
       }
     }
     // Check row boundaries (horizontal lines) — test y
-    for (let i = 1; i < this._rowBoundaries.length - 1; i++) {
+    for (let i = 0; i < this._rowBoundaries.length; i++) {
       if (Math.abs(imageY - this._rowBoundaries[i]) <= hitRadius) {
-        return { type: 'row', index: i };
+        const isEdge = i === 0 || i === this._rowBoundaries.length - 1;
+        return { type: 'row', index: i, isEdge };
       }
     }
     return null;

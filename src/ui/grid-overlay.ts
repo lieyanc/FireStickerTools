@@ -1,4 +1,4 @@
-import type { LoadedImage, DisplayTransform, DragTarget } from '../types.ts';
+import type { LoadedImage, DisplayTransform, DragTarget, DragMode } from '../types.ts';
 import { GridModel } from '../core/grid-model.ts';
 import { renderGifFirstFrame } from '../core/image-loader.ts';
 
@@ -16,6 +16,7 @@ export class GridOverlay {
   private imageSource: HTMLImageElement | HTMLCanvasElement | null = null;
   private dragTarget: DragTarget = null;
   private isDragging = false;
+  private dragMode: DragMode = 'redistribute';
   private rafId = 0;
   private onChange: GridChangeCallback | null = null;
 
@@ -39,6 +40,10 @@ export class GridOverlay {
 
   setOnChange(cb: GridChangeCallback): void {
     this.onChange = cb;
+  }
+
+  setDragMode(mode: DragMode): void {
+    this.dragMode = mode;
   }
 
   setImage(loaded: LoadedImage): void {
@@ -151,38 +156,90 @@ export class GridOverlay {
     ctx.clearRect(0, 0, canvasW, canvasH);
 
     const boundaries = this.gridModel.boundaries;
+    const rowB = boundaries.rowBoundaries;
+    const colB = boundaries.colBoundaries;
+
+    // Compute display positions of the outer edges
+    const leftEdge = colB[0] * scale + offsetX;
+    const rightEdge = colB[colB.length - 1] * scale + offsetX;
+    const topEdge = rowB[0] * scale + offsetY;
+    const bottomEdge = rowB[rowB.length - 1] * scale + offsetY;
+
+    // Draw semi-transparent mask outside outer edges
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    // Top mask
+    if (topEdge > 0) ctx.fillRect(0, 0, canvasW, topEdge);
+    // Bottom mask
+    if (bottomEdge < canvasH) ctx.fillRect(0, bottomEdge, canvasW, canvasH - bottomEdge);
+    // Left mask (between top and bottom edges)
+    if (leftEdge > 0) ctx.fillRect(0, topEdge, leftEdge, bottomEdge - topEdge);
+    // Right mask
+    if (rightEdge < canvasW) ctx.fillRect(rightEdge, topEdge, canvasW - rightEdge, bottomEdge - topEdge);
+    ctx.restore();
 
     ctx.save();
+
+    // Draw edge boundaries (solid pink lines)
+    ctx.setLineDash([]);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255, 107, 157, 0.9)';
+
+    // Top edge
+    ctx.beginPath();
+    ctx.moveTo(leftEdge, topEdge);
+    ctx.lineTo(rightEdge, topEdge);
+    ctx.stroke();
+    // Bottom edge
+    ctx.beginPath();
+    ctx.moveTo(leftEdge, bottomEdge);
+    ctx.lineTo(rightEdge, bottomEdge);
+    ctx.stroke();
+    // Left edge
+    ctx.beginPath();
+    ctx.moveTo(leftEdge, topEdge);
+    ctx.lineTo(leftEdge, bottomEdge);
+    ctx.stroke();
+    // Right edge
+    ctx.beginPath();
+    ctx.moveTo(rightEdge, topEdge);
+    ctx.lineTo(rightEdge, bottomEdge);
+    ctx.stroke();
+
+    // Draw drag handles on edge midpoints
+    const handleSize = 5;
+    ctx.fillStyle = 'rgba(255, 107, 157, 0.9)';
+    const midX = (leftEdge + rightEdge) / 2;
+    const midY = (topEdge + bottomEdge) / 2;
+    // Top handle
+    this._drawHandle(ctx, midX, topEdge, handleSize);
+    // Bottom handle
+    this._drawHandle(ctx, midX, bottomEdge, handleSize);
+    // Left handle
+    this._drawHandle(ctx, leftEdge, midY, handleSize);
+    // Right handle
+    this._drawHandle(ctx, rightEdge, midY, handleSize);
+
+    // Draw inner boundaries (dashed lines)
     ctx.setLineDash([6, 4]);
     ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(108, 99, 255, 0.8)';
 
-    // Draw column boundaries (vertical lines)
-    for (let i = 0; i <= this.gridModel.cols; i++) {
-      const x = boundaries.colBoundaries[i] * scale + offsetX;
-      const y1 = offsetY;
-      const y2 = this.gridModel.imageHeight * scale + offsetY;
-
-      const isEdge = i === 0 || i === this.gridModel.cols;
-      ctx.strokeStyle = isEdge ? 'rgba(108, 99, 255, 0.3)' : 'rgba(108, 99, 255, 0.8)';
-
+    // Inner column lines
+    for (let i = 1; i < colB.length - 1; i++) {
+      const x = colB[i] * scale + offsetX;
       ctx.beginPath();
-      ctx.moveTo(x, y1);
-      ctx.lineTo(x, y2);
+      ctx.moveTo(x, topEdge);
+      ctx.lineTo(x, bottomEdge);
       ctx.stroke();
     }
 
-    // Draw row boundaries (horizontal lines)
-    for (let i = 0; i <= this.gridModel.rows; i++) {
-      const y = boundaries.rowBoundaries[i] * scale + offsetY;
-      const x1 = offsetX;
-      const x2 = this.gridModel.imageWidth * scale + offsetX;
-
-      const isEdge = i === 0 || i === this.gridModel.rows;
-      ctx.strokeStyle = isEdge ? 'rgba(108, 99, 255, 0.3)' : 'rgba(108, 99, 255, 0.8)';
-
+    // Inner row lines
+    for (let i = 1; i < rowB.length - 1; i++) {
+      const y = rowB[i] * scale + offsetY;
       ctx.beginPath();
-      ctx.moveTo(x1, y);
-      ctx.lineTo(x2, y);
+      ctx.moveTo(leftEdge, y);
+      ctx.lineTo(rightEdge, y);
       ctx.stroke();
     }
 
@@ -209,6 +266,12 @@ export class GridOverlay {
     }
 
     ctx.restore();
+  }
+
+  private _drawHandle(ctx: CanvasRenderingContext2D, x: number, y: number, size: number): void {
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   private _displayToImage(displayX: number, displayY: number): { x: number; y: number } {
@@ -268,7 +331,8 @@ export class GridOverlay {
 
     if (this.isDragging && this.dragTarget) {
       const position = this.dragTarget.type === 'row' ? imgPos.y : imgPos.x;
-      this.gridModel.moveBoundary(this.dragTarget.type, this.dragTarget.index, position);
+      const redistribute = this.dragTarget.isEdge && this.dragMode === 'redistribute';
+      this.gridModel.moveBoundary(this.dragTarget.type, this.dragTarget.index, position, redistribute);
 
       if (!this.rafId) {
         this.rafId = requestAnimationFrame(() => {

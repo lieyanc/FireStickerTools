@@ -221,6 +221,26 @@ body {
   font-size: 14px;
 }
 
+/* Drag Mode Toggle */
+.drag-mode-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.drag-mode-section label {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-hint);
+  margin-bottom: 8px;
+}
+
+.drag-mode-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
 /* Toolbar */
 .toolbar-row {
   display: flex;
