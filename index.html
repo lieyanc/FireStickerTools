@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>表情包切割工具 - FireStickerTools</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <h1>表情包切割工具</h1>
+        <p class="subtitle">上传排版图，自动切分为单张表情</p>
+      </header>
+
+      <section id="upload-section" class="section">
+        <div id="upload-zone" class="upload-zone">
+          <div class="upload-zone__content">
+            <svg class="upload-zone__icon" viewBox="0 0 48 48" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M24 32V16m0 0l-8 8m8-8l8 8" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="4" y="4" width="40" height="40" rx="4" stroke-linecap="round"/>
+            </svg>
+            <p>拖拽图片到这里，或<span class="upload-zone__link">点击选择文件</span></p>
+            <p class="upload-zone__hint">支持 JPG / PNG / GIF 格式</p>
+          </div>
+          <input type="file" id="file-input" accept="image/jpeg,image/png,image/gif" hidden />
+        </div>
+      </section>
+
+      <section id="editor-section" class="section hidden">
+        <div class="editor-layout">
+          <div class="editor-sidebar">
+            <div id="preset-controls" class="controls-panel"></div>
+            <div id="toolbar" class="controls-panel"></div>
+          </div>
+          <div class="editor-main">
+            <div id="grid-overlay-container" class="grid-overlay-container"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="gallery-section" class="section hidden">
+        <h2 class="section-title">切分结果</h2>
+        <div id="cell-gallery" class="cell-gallery"></div>
+      </section>
+
+      <div id="progress-overlay" class="progress-overlay hidden">
+        <div class="progress-box">
+          <div class="progress-spinner"></div>
+          <p id="progress-text">处理中...</p>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
