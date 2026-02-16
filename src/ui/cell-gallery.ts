@@ -1,7 +1,6 @@
 import type { CellRect, LoadedImage, OutputFormat } from '../types.ts';
 import { cropStaticImage, canvasToBlob } from '../core/image-splitter.ts';
-import { cropGif } from '../core/gif-splitter.ts';
-import { compositeGifFrames } from '../core/image-loader.ts';
+import { cropToGif } from '../core/gif-splitter.ts';
 import { downloadBlob } from '../utils/download.ts';
 
 export type SelectionChangeCallback = (selectedIndices: Set<number>) => void;
@@ -12,6 +11,7 @@ export class CellGallery {
   private loadedImage: LoadedImage | null = null;
   private selectedIndices = new Set<number>();
   private onSelectionChange: SelectionChangeCallback | null = null;
+  private lastUsedFormat: OutputFormat = 'jpg';
 
   constructor(containerId: string) {
     this.container = document.getElementById(containerId)!;
@@ -94,22 +94,45 @@ export class CellGallery {
     check.textContent = '\u2713';
     card.appendChild(check);
 
-    // Download button
-    const dlBtn = document.createElement('button');
-    dlBtn.className = 'cell-card__download';
-    dlBtn.innerHTML = '\u2913';
-    dlBtn.title = '下载';
-    dlBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this._downloadCell(cell, index, this._getCurrentFormat());
-    });
-    card.appendChild(dlBtn);
+    // Footer: label + download buttons
+    const footer = document.createElement('div');
+    footer.className = 'cell-card__footer';
 
-    // Label
     const label = document.createElement('div');
     label.className = 'cell-card__label';
     label.textContent = `${cell.row + 1}-${cell.col + 1}`;
-    card.appendChild(label);
+    footer.appendChild(label);
+
+    // Download button group
+    const dlGroup = document.createElement('div');
+    dlGroup.className = 'cell-card__dl-group';
+
+    const jpgBtn = document.createElement('button');
+    jpgBtn.className = 'cell-card__dl-btn';
+    jpgBtn.textContent = 'JPG';
+    if (this.lastUsedFormat === 'jpg') jpgBtn.classList.add('last-used');
+
+    const gifBtn = document.createElement('button');
+    gifBtn.className = 'cell-card__dl-btn';
+    gifBtn.textContent = 'GIF';
+    if (this.lastUsedFormat === 'gif') gifBtn.classList.add('last-used');
+
+    jpgBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._setLastUsedFormat('jpg');
+      this._downloadCell(cell, index, 'jpg');
+    });
+
+    gifBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._setLastUsedFormat('gif');
+      this._downloadCell(cell, index, 'gif');
+    });
+
+    dlGroup.appendChild(jpgBtn);
+    dlGroup.appendChild(gifBtn);
+    footer.appendChild(dlGroup);
+    card.appendChild(footer);
 
     // Click to select
     card.addEventListener('click', () => {
@@ -126,6 +149,23 @@ export class CellGallery {
     return card;
   }
 
+  private _setLastUsedFormat(format: OutputFormat): void {
+    this.lastUsedFormat = format;
+    // Update highlight on all visible buttons
+    const allBtns = this.container.querySelectorAll('.cell-card__dl-btn');
+    allBtns.forEach((btn) => {
+      const el = btn as HTMLButtonElement;
+      if (el.textContent === format.toUpperCase()) {
+        el.classList.add('last-used');
+      } else {
+        el.classList.remove('last-used');
+      }
+    });
+    // Sync sidebar format selector
+    const select = document.getElementById('format-select') as HTMLSelectElement | null;
+    if (select) select.value = format;
+  }
+
   private _createThumbnail(cell: CellRect): HTMLCanvasElement {
     if (!this.loadedImage) {
       const c = document.createElement('canvas');
@@ -134,64 +174,17 @@ export class CellGallery {
       return c;
     }
 
-    let source: HTMLImageElement | HTMLCanvasElement;
-
-    if (this.loadedImage.type === 'static' && this.loadedImage.element) {
-      source = this.loadedImage.element;
-    } else if (this.loadedImage.type === 'gif' && this.loadedImage.gifFrames) {
-      // Use first composited frame
-      const frames = compositeGifFrames(this.loadedImage);
-      if (frames.length > 0) {
-        const tmpCanvas = document.createElement('canvas');
-        tmpCanvas.width = this.loadedImage.width;
-        tmpCanvas.height = this.loadedImage.height;
-        const tmpCtx = tmpCanvas.getContext('2d')!;
-        tmpCtx.putImageData(frames[0].imageData, 0, 0);
-        source = tmpCanvas;
-      } else {
-        const c = document.createElement('canvas');
-        c.width = 1;
-        c.height = 1;
-        return c;
-      }
-    } else {
-      const c = document.createElement('canvas');
-      c.width = 1;
-      c.height = 1;
-      return c;
-    }
-
-    return cropStaticImage(source, cell);
-  }
-
-  private _getCurrentFormat(): OutputFormat {
-    const select = document.getElementById('format-select') as HTMLSelectElement | null;
-    if (select) return select.value as OutputFormat;
-    return this.loadedImage?.type === 'gif' ? 'gif' : 'jpg';
+    return cropStaticImage(this.loadedImage.element, cell);
   }
 
   private async _getCellBlob(cell: CellRect, format: OutputFormat): Promise<Blob> {
     if (!this.loadedImage) throw new Error('No image loaded');
 
-    if (format === 'gif' && this.loadedImage.type === 'gif') {
-      return cropGif(this.loadedImage, cell);
+    if (format === 'gif') {
+      return cropToGif(this.loadedImage.element, cell);
     }
 
-    let source: HTMLImageElement | HTMLCanvasElement;
-    if (this.loadedImage.type === 'static' && this.loadedImage.element) {
-      source = this.loadedImage.element;
-    } else {
-      // For GIF saved as JPG, use first composited frame
-      const frames = compositeGifFrames(this.loadedImage);
-      const tmpCanvas = document.createElement('canvas');
-      tmpCanvas.width = this.loadedImage.width;
-      tmpCanvas.height = this.loadedImage.height;
-      const tmpCtx = tmpCanvas.getContext('2d')!;
-      tmpCtx.putImageData(frames[0].imageData, 0, 0);
-      source = tmpCanvas;
-    }
-
-    const canvas = cropStaticImage(source, cell);
+    const canvas = cropStaticImage(this.loadedImage.element, cell);
     return canvasToBlob(canvas, 'jpg');
   }
 

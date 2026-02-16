@@ -1,14 +1,11 @@
-import type { OutputFormat, LoadedImage } from '../types.ts';
+import type { OutputFormat } from '../types.ts';
 import JSZip from 'jszip';
 import { downloadBlob } from '../utils/download.ts';
 import type { CellGallery } from './cell-gallery.ts';
 
-export type FormatChangeCallback = (format: OutputFormat) => void;
-
 export function initToolbar(
   container: HTMLElement,
   gallery: CellGallery,
-  onFormatChange: FormatChangeCallback
 ): void {
   container.innerHTML = '';
 
@@ -33,9 +30,10 @@ export function initToolbar(
 
   formatSelect.appendChild(jpgOption);
 
-  formatSelect.addEventListener('change', () => {
-    onFormatChange(formatSelect.value as OutputFormat);
-  });
+  const gifOption = document.createElement('option');
+  gifOption.value = 'gif';
+  gifOption.textContent = 'GIF';
+  formatSelect.appendChild(gifOption);
 
   formatRow.appendChild(formatLabel);
   formatRow.appendChild(formatSelect);
@@ -116,22 +114,6 @@ export function initToolbar(
     }
   });
   container.appendChild(zipBtn);
-}
-
-export function updateToolbarForImage(loaded: LoadedImage): void {
-  const formatSelect = document.getElementById('format-select') as HTMLSelectElement | null;
-  if (!formatSelect) return;
-
-  // Remove GIF option if exists
-  const existingGif = formatSelect.querySelector('option[value="gif"]');
-  if (existingGif) existingGif.remove();
-
-  if (loaded.type === 'gif') {
-    const gifOption = document.createElement('option');
-    gifOption.value = 'gif';
-    gifOption.textContent = 'GIF (保留动画)';
-    formatSelect.appendChild(gifOption);
-  }
 }
 
 function showProgress(text: string): void {

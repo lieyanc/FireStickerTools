@@ -20,20 +20,9 @@ export interface GridBoundaries {
 export type OutputFormat = 'jpg' | 'gif';
 
 export interface LoadedImage {
-  type: 'static' | 'gif';
   width: number;
   height: number;
-  element?: HTMLImageElement;        // for static images
-  gifFrames?: ParsedGifFrame[];      // for GIF
-  gifRawData?: ArrayBuffer;          // raw GIF data for re-encoding
-}
-
-export interface ParsedGifFrame {
-  imageData: ImageData;
-  delay: number;
-  disposalType: number;
-  patch: Uint8ClampedArray;
-  dims: { width: number; height: number; top: number; left: number };
+  element: HTMLImageElement;
 }
 
 export interface DisplayTransform {

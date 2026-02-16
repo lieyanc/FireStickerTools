@@ -1,6 +1,5 @@
 import type { LoadedImage, DisplayTransform, DragTarget, DragMode } from '../types.ts';
 import { GridModel } from '../core/grid-model.ts';
-import { renderGifFirstFrame } from '../core/image-loader.ts';
 
 export type GridChangeCallback = () => void;
 
@@ -13,7 +12,6 @@ export class GridOverlay {
   private transform: DisplayTransform = { scale: 1, offsetX: 0, offsetY: 0 };
   private gridModel: GridModel | null = null;
   private loadedImage: LoadedImage | null = null;
-  private imageSource: HTMLImageElement | HTMLCanvasElement | null = null;
   private dragTarget: DragTarget = null;
   private isDragging = false;
   private dragMode: DragMode = 'redistribute';
@@ -48,13 +46,6 @@ export class GridOverlay {
 
   setImage(loaded: LoadedImage): void {
     this.loadedImage = loaded;
-
-    if (loaded.type === 'static' && loaded.element) {
-      this.imageSource = loaded.element;
-    } else if (loaded.type === 'gif') {
-      this.imageSource = renderGifFirstFrame(loaded);
-    }
-
     this._updateLayout();
     this._drawImage();
   }
@@ -106,7 +97,7 @@ export class GridOverlay {
   }
 
   private _drawImage(): void {
-    if (!this.imageSource || !this.loadedImage) return;
+    if (!this.loadedImage) return;
 
     const { scale, offsetX, offsetY } = this.transform;
     const canvasW = this.imageCanvas.width / (window.devicePixelRatio || 1);
@@ -120,7 +111,7 @@ export class GridOverlay {
     this._drawCheckerboard(this.imageCtx, offsetX, offsetY, imgDisplayW, imgDisplayH);
 
     this.imageCtx.drawImage(
-      this.imageSource,
+      this.loadedImage.element,
       offsetX, offsetY,
       imgDisplayW, imgDisplayH
     );
@@ -223,7 +214,7 @@ export class GridOverlay {
     // Draw inner boundaries (dashed lines)
     ctx.setLineDash([6, 4]);
     ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'rgba(108, 99, 255, 0.8)';
+    ctx.strokeStyle = 'rgba(1, 142, 238, 0.8)';
 
     // Inner column lines
     for (let i = 1; i < colB.length - 1; i++) {
@@ -259,7 +250,7 @@ export class GridOverlay {
 
       // Only show label if cell is large enough
       if (cellDisplayW > 30 && cellDisplayH > 20) {
-        ctx.fillStyle = 'rgba(108, 99, 255, 0.5)';
+        ctx.fillStyle = 'rgba(1, 142, 238, 0.5)';
         const label = `${cell.row + 1},${cell.col + 1}`;
         ctx.fillText(label, cx, cy);
       }

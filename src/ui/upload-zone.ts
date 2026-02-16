@@ -27,7 +27,7 @@ export function initUploadZone(onFile: UploadCallback): void {
     e.preventDefault();
     zone.classList.remove('dragover');
     const file = e.dataTransfer?.files[0];
-    if (file && file.type.startsWith('image/')) {
+    if (file && file.type.startsWith('image/') && file.type !== 'image/gif') {
       onFile(file);
     }
   });

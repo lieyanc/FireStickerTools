@@ -6,7 +6,7 @@ import { initUploadZone } from './ui/upload-zone.ts';
 import { initPresetControls } from './ui/preset-controls.ts';
 import { GridOverlay } from './ui/grid-overlay.ts';
 import { CellGallery } from './ui/cell-gallery.ts';
-import { initToolbar, updateToolbarForImage } from './ui/toolbar.ts';
+import { initToolbar } from './ui/toolbar.ts';
 
 // State
 let currentImage: LoadedImage | null = null;
@@ -52,7 +52,6 @@ async function handleFile(file: File): Promise<void> {
 
   try {
     currentImage = await loadImage(file);
-    updateToolbarForImage(currentImage);
 
     showEditor();
     gridOverlay.setImage(currentImage);
@@ -77,9 +76,7 @@ initPresetControls(presetContainer, (config) => {
 
 // Initialize toolbar
 const toolbarContainer = document.getElementById('toolbar')!;
-initToolbar(toolbarContainer, cellGallery, () => {
-  // format change — no additional action needed, gallery reads from DOM select
-});
+initToolbar(toolbarContainer, cellGallery);
 
 // Grid overlay change callback (after dragging grid lines)
 gridOverlay.setOnChange(() => {
