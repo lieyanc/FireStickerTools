@@ -129,7 +129,7 @@ export class GridOverlay {
 
     for (let row = 0; row * size < h; row++) {
       for (let col = 0; col * size < w; col++) {
-        ctx.fillStyle = (row + col) % 2 === 0 ? '#2a2a3a' : '#1e1e2e';
+        ctx.fillStyle = (row + col) % 2 === 0 ? '#222234' : '#1a1a28';
         ctx.fillRect(x + col * size, y + row * size, size, size);
       }
     }
@@ -158,7 +158,7 @@ export class GridOverlay {
 
     // Draw semi-transparent mask outside outer edges
     ctx.save();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
     // Top mask
     if (topEdge > 0) ctx.fillRect(0, 0, canvasW, topEdge);
     // Bottom mask
@@ -174,7 +174,7 @@ export class GridOverlay {
     // Draw edge boundaries (solid pink lines)
     ctx.setLineDash([]);
     ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(255, 107, 157, 0.9)';
+    ctx.strokeStyle = 'rgba(240, 98, 146, 0.85)';
 
     // Top edge
     ctx.beginPath();
@@ -199,7 +199,7 @@ export class GridOverlay {
 
     // Draw drag handles on edge midpoints
     const handleSize = 5;
-    ctx.fillStyle = 'rgba(255, 107, 157, 0.9)';
+    ctx.fillStyle = 'rgba(240, 98, 146, 0.85)';
     const midX = (leftEdge + rightEdge) / 2;
     const midY = (topEdge + bottomEdge) / 2;
     // Top handle
@@ -214,7 +214,7 @@ export class GridOverlay {
     // Draw inner boundaries (dashed lines)
     ctx.setLineDash([6, 4]);
     ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'rgba(1, 142, 238, 0.8)';
+    ctx.strokeStyle = 'rgba(59, 141, 248, 0.75)';
 
     // Inner column lines
     for (let i = 1; i < colB.length - 1; i++) {
@@ -250,7 +250,7 @@ export class GridOverlay {
 
       // Only show label if cell is large enough
       if (cellDisplayW > 30 && cellDisplayH > 20) {
-        ctx.fillStyle = 'rgba(1, 142, 238, 0.5)';
+        ctx.fillStyle = 'rgba(59, 141, 248, 0.45)';
         const label = `${cell.row + 1},${cell.col + 1}`;
         ctx.fillText(label, cx, cy);
       }
