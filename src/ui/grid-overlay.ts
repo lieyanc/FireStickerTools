@@ -129,7 +129,7 @@ export class GridOverlay {
 
     for (let row = 0; row * size < h; row++) {
       for (let col = 0; col * size < w; col++) {
-        ctx.fillStyle = (row + col) % 2 === 0 ? '#222234' : '#1a1a28';
+        ctx.fillStyle = (row + col) % 2 === 0 ? '#1c1c1c' : '#161616';
         ctx.fillRect(x + col * size, y + row * size, size, size);
       }
     }
@@ -171,10 +171,10 @@ export class GridOverlay {
 
     ctx.save();
 
-    // Draw edge boundaries (solid pink lines)
+    // Draw edge boundaries
     ctx.setLineDash([]);
     ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(240, 98, 146, 0.85)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
 
     // Top edge
     ctx.beginPath();
@@ -199,7 +199,7 @@ export class GridOverlay {
 
     // Draw drag handles on edge midpoints
     const handleSize = 5;
-    ctx.fillStyle = 'rgba(240, 98, 146, 0.85)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
     const midX = (leftEdge + rightEdge) / 2;
     const midY = (topEdge + bottomEdge) / 2;
     // Top handle
@@ -214,7 +214,7 @@ export class GridOverlay {
     // Draw inner boundaries (dashed lines)
     ctx.setLineDash([6, 4]);
     ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'rgba(59, 141, 248, 0.75)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
 
     // Inner column lines
     for (let i = 1; i < colB.length - 1; i++) {
@@ -250,7 +250,7 @@ export class GridOverlay {
 
       // Only show label if cell is large enough
       if (cellDisplayW > 30 && cellDisplayH > 20) {
-        ctx.fillStyle = 'rgba(59, 141, 248, 0.45)';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
         const label = `${cell.row + 1},${cell.col + 1}`;
         ctx.fillText(label, cx, cy);
       }

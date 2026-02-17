@@ -188,18 +188,11 @@ export class CellGallery {
     return canvasToBlob(canvas, 'jpg');
   }
 
-  private async _downloadCell(cell: CellRect, index: number, format: OutputFormat): Promise<void> {
+  private async _downloadCell(cell: CellRect, _index: number, format: OutputFormat): Promise<void> {
     const blob = await this._getCellBlob(cell, format);
     const ext = format === 'gif' ? 'gif' : 'jpg';
     const filename = `sticker_${cell.row + 1}_${cell.col + 1}.${ext}`;
     downloadBlob(blob, filename);
-
-    // Brief flash feedback
-    const card = this.container.querySelector(`[data-index="${index}"]`);
-    if (card) {
-      card.classList.add('downloaded');
-      setTimeout(() => card.classList.remove('downloaded'), 300);
-    }
   }
 
   private _updateSelectionUI(): void {
