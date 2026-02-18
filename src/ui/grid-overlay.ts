@@ -14,6 +14,7 @@ export class GridOverlay {
   private loadedImage: LoadedImage | null = null;
   private dragTarget: DragTarget = null;
   private isDragging = false;
+  private dragDisplayPos: { x: number; y: number } | null = null;
   private dragMode: DragMode = 'redistribute';
   private rafId = 0;
   private onChange: GridChangeCallback | null = null;
@@ -174,7 +175,7 @@ export class GridOverlay {
     // Draw edge boundaries
     ctx.setLineDash([]);
     ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.strokeStyle = 'rgba(1, 142, 238, 0.85)';
 
     // Top edge
     ctx.beginPath();
@@ -199,7 +200,7 @@ export class GridOverlay {
 
     // Draw drag handles on edge midpoints
     const handleSize = 5;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.fillStyle = 'rgba(1, 142, 238, 0.9)';
     const midX = (leftEdge + rightEdge) / 2;
     const midY = (topEdge + bottomEdge) / 2;
     // Top handle
@@ -214,7 +215,7 @@ export class GridOverlay {
     // Draw inner boundaries (dashed lines)
     ctx.setLineDash([6, 4]);
     ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.strokeStyle = 'rgba(1, 142, 238, 0.4)';
 
     // Inner column lines
     for (let i = 1; i < colB.length - 1; i++) {
@@ -250,12 +251,134 @@ export class GridOverlay {
 
       // Only show label if cell is large enough
       if (cellDisplayW > 30 && cellDisplayH > 20) {
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.fillStyle = 'rgba(1, 142, 238, 0.3)';
         const label = `${cell.row + 1},${cell.col + 1}`;
         ctx.fillText(label, cx, cy);
       }
     }
 
+    ctx.restore();
+
+    // Draw magnifier when dragging
+    if (this.isDragging && this.dragTarget && this.dragDisplayPos) {
+      this._drawMagnifier(ctx, canvasW, canvasH);
+    }
+  }
+
+  private _drawMagnifier(
+    ctx: CanvasRenderingContext2D,
+    canvasW: number,
+    canvasH: number,
+  ): void {
+    if (!this.dragTarget || !this.dragDisplayPos || !this.loadedImage || !this.gridModel) return;
+
+    const radius = 55;
+    const zoom = 2.5;
+    const offset = radius + 28;
+    const { scale, offsetX, offsetY } = this.transform;
+    const boundaries = this.gridModel.boundaries;
+
+    // The focal point: where the boundary line is, at the pointer position
+    let focusX: number;
+    let focusY: number;
+
+    if (this.dragTarget.type === 'row') {
+      const rowB = boundaries.rowBoundaries;
+      focusX = this.dragDisplayPos.x;
+      focusY = rowB[this.dragTarget.index] * scale + offsetY;
+    } else {
+      const colB = boundaries.colBoundaries;
+      focusX = colB[this.dragTarget.index] * scale + offsetX;
+      focusY = this.dragDisplayPos.y;
+    }
+
+    // Position the magnifier above the focal point
+    let magX = focusX;
+    let magY = focusY - offset;
+
+    // Clamp within canvas
+    magX = Math.max(radius + 2, Math.min(canvasW - radius - 2, magX));
+    magY = Math.max(radius + 2, Math.min(canvasH - radius - 2, magY));
+
+    // If magnifier overlaps the focal point, flip to below
+    const dist = Math.hypot(magX - focusX, magY - focusY);
+    if (dist < radius + 12) {
+      magY = focusY + offset;
+      magY = Math.min(canvasH - radius - 2, magY);
+    }
+
+    // Clip to circle
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(magX, magY, radius, 0, Math.PI * 2);
+    ctx.clip();
+
+    // Background
+    ctx.fillStyle = '#0f0f0f';
+    ctx.fill();
+
+    // Draw the original image zoomed in, centered on the focal point
+    const imgW = this.loadedImage.width;
+    const imgH = this.loadedImage.height;
+    const zoomedScale = scale * zoom;
+    const imgDrawX = magX - (focusX - offsetX) * zoom;
+    const imgDrawY = magY - (focusY - offsetY) * zoom;
+
+    ctx.drawImage(
+      this.loadedImage.element,
+      imgDrawX, imgDrawY,
+      imgW * zoomedScale, imgH * zoomedScale,
+    );
+
+    // Draw the boundary line through the center of the magnifier
+    ctx.setLineDash([]);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(1, 142, 238, 0.9)';
+
+    if (this.dragTarget.type === 'row') {
+      ctx.beginPath();
+      ctx.moveTo(magX - radius, magY);
+      ctx.lineTo(magX + radius, magY);
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(magX, magY - radius);
+      ctx.lineTo(magX, magY + radius);
+      ctx.stroke();
+    }
+
+    // Crosshair tick marks at center
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.lineWidth = 1;
+    const tick = 6;
+    if (this.dragTarget.type === 'row') {
+      ctx.beginPath();
+      ctx.moveTo(magX, magY - tick);
+      ctx.lineTo(magX, magY + tick);
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(magX - tick, magY);
+      ctx.lineTo(magX + tick, magY);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+
+    // Border ring
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(magX, magY, radius, 0, Math.PI * 2);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(1, 142, 238, 0.6)';
+    ctx.stroke();
+
+    // Outer shadow ring
+    ctx.beginPath();
+    ctx.arc(magX, magY, radius + 1, 0, Math.PI * 2);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -309,6 +432,7 @@ export class GridOverlay {
     if (hit) {
       this.isDragging = true;
       this.dragTarget = hit;
+      this.dragDisplayPos = pos;
       this.overlayCanvas.setPointerCapture(e.pointerId);
       e.preventDefault();
     }
@@ -321,6 +445,7 @@ export class GridOverlay {
     const imgPos = this._displayToImage(pos.x, pos.y);
 
     if (this.isDragging && this.dragTarget) {
+      this.dragDisplayPos = pos;
       const position = this.dragTarget.type === 'row' ? imgPos.y : imgPos.x;
       const redistribute = this.dragTarget.isEdge && this.dragMode === 'redistribute';
       this.gridModel.moveBoundary(this.dragTarget.type, this.dragTarget.index, position, redistribute);
@@ -349,6 +474,8 @@ export class GridOverlay {
     if (this.isDragging) {
       this.isDragging = false;
       this.dragTarget = null;
+      this.dragDisplayPos = null;
+      this._drawOverlay();
       this.onChange?.();
     }
   }

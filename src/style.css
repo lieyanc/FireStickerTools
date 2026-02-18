@@ -5,10 +5,10 @@
   --color-surface-hover: #282828;
   --color-border: #2e2e2e;
   --color-border-subtle: #242424;
-  --color-primary: #d4d4d4;
-  --color-primary-hover: #e8e8e8;
-  --color-primary-dim: rgba(255, 255, 255, 0.04);
-  --color-primary-glow: rgba(255, 255, 255, 0.08);
+  --color-primary: #018eee;
+  --color-primary-hover: #2da2f7;
+  --color-primary-dim: rgba(1, 142, 238, 0.08);
+  --color-primary-glow: rgba(1, 142, 238, 0.2);
   --color-text: #d4d4d4;
   --color-text-secondary: #888;
   --color-text-hint: #555;
@@ -95,7 +95,7 @@ body {
 
 .upload-zone:hover,
 .upload-zone.dragover {
-  border-color: var(--color-text-secondary);
+  border-color: var(--color-primary);
   background: var(--color-surface-alt);
 }
 
@@ -116,7 +116,7 @@ body {
 }
 
 .upload-zone__link {
-  color: var(--color-text);
+  color: var(--color-primary);
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -199,9 +199,9 @@ body {
 }
 
 .preset-btn.active {
-  border-color: var(--color-text);
-  background: var(--color-surface-alt);
-  color: var(--color-text);
+  border-color: var(--color-primary);
+  background: var(--color-primary-dim);
+  color: var(--color-primary);
 }
 
 /* ─── Custom Input ─── */
@@ -232,7 +232,7 @@ body {
 
 .custom-input-row input:focus {
   outline: none;
-  border-color: var(--color-text-secondary);
+  border-color: var(--color-primary);
 }
 
 .custom-input-row .separator {
@@ -289,7 +289,7 @@ body {
 
 .toolbar-select:focus {
   outline: none;
-  border-color: var(--color-text-secondary);
+  border-color: var(--color-primary);
 }
 
 /* ─── Buttons ─── */
@@ -308,8 +308,8 @@ body {
 }
 
 .btn-primary {
-  background: var(--color-text);
-  color: var(--color-bg);
+  background: var(--color-primary);
+  color: #fff;
 }
 
 .btn-primary:hover {
@@ -317,7 +317,7 @@ body {
 }
 
 .btn-primary:active {
-  background: var(--color-text-secondary);
+  background: #0178c8;
 }
 
 .btn-primary:disabled {
@@ -389,7 +389,7 @@ body {
 }
 
 .cell-card.selected {
-  border-color: var(--color-text);
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 1px var(--color-primary-glow);
 }
 
@@ -462,8 +462,8 @@ body {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--color-text);
-  color: var(--color-bg);
+  background: var(--color-primary);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -501,7 +501,7 @@ body {
   width: 32px;
   height: 32px;
   border: 2.5px solid var(--color-border);
-  border-top-color: var(--color-text);
+  border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 0.75s linear infinite;
   margin: 0 auto 14px;
@@ -517,9 +517,18 @@ body {
 }
 
 /* ─── Responsive ─── */
+
+/* Tablet: sidebar narrows */
+@media (max-width: 960px) {
+  .editor-sidebar {
+    width: 188px;
+  }
+}
+
+/* Mobile: stack vertically */
 @media (max-width: 768px) {
   #app {
-    padding: 12px 12px 40px;
+    padding: 12px 14px 40px;
   }
 
   .app-header {
@@ -527,30 +536,101 @@ body {
   }
 
   .app-header h1 {
-    font-size: 21px;
+    font-size: 20px;
+  }
+
+  .app-header .subtitle {
+    font-size: 12px;
   }
 
   .editor-layout {
     flex-direction: column;
+    gap: 12px;
   }
 
   .editor-sidebar {
     width: 100%;
     flex-direction: row;
     flex-wrap: wrap;
+    gap: 8px;
   }
 
   .editor-sidebar .controls-panel {
     flex: 1;
-    min-width: 180px;
+    min-width: 160px;
+  }
+
+  .grid-overlay-container {
+    min-height: 240px;
   }
 
   .upload-zone {
     padding: 36px 16px;
   }
 
+  .section-title {
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+
   .cell-gallery {
-    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     gap: 8px;
+  }
+
+  .cell-card__footer {
+    min-height: 32px;
+  }
+
+  .cell-card__dl-btn {
+    padding: 3px 6px;
+    font-size: 10px;
+  }
+
+  .btn {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  .preset-btn {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+}
+
+/* Small phone */
+@media (max-width: 420px) {
+  #app {
+    padding: 8px 10px 32px;
+  }
+
+  .app-header {
+    padding: 14px 0 12px;
+  }
+
+  .app-header h1 {
+    font-size: 18px;
+  }
+
+  .editor-sidebar {
+    flex-direction: column;
+  }
+
+  .editor-sidebar .controls-panel {
+    min-width: unset;
+  }
+
+  .cell-gallery {
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    gap: 6px;
+  }
+
+  .cell-card__label {
+    font-size: 9px;
+    padding: 3px 4px;
+  }
+
+  .cell-card__dl-group {
+    padding: 2px 3px 2px 0;
   }
 }
